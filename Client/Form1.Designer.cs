@@ -28,24 +28,23 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea1 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
             System.Windows.Forms.DataVisualization.Charting.Series series1 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea2 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Series series2 = new System.Windows.Forms.DataVisualization.Charting.Series();
             this.buttonConnect = new System.Windows.Forms.Button();
             this.numericComPort = new System.Windows.Forms.NumericUpDown();
-            this.buttonRead = new System.Windows.Forms.Button();
-            this.numericReadChannel = new System.Windows.Forms.NumericUpDown();
-            this.chart = new System.Windows.Forms.DataVisualization.Charting.Chart();
-            this.buttonPing = new System.Windows.Forms.Button();
-            this.button1 = new System.Windows.Forms.Button();
-            this.numPoints = new System.Windows.Forms.NumericUpDown();
-            this.numericWait = new System.Windows.Forms.NumericUpDown();
-            this.buttonSetWait = new System.Windows.Forms.Button();
-            this.buttonSave = new System.Windows.Forms.Button();
+            this.chart2 = new System.Windows.Forms.DataVisualization.Charting.Chart();
+            this.port = new System.IO.Ports.SerialPort(this.components);
+            this.timer1 = new System.Windows.Forms.Timer(this.components);
+            this.listBox1 = new System.Windows.Forms.ListBox();
+            this.btnTimer = new System.Windows.Forms.Button();
+            this.txtSerialCant = new System.Windows.Forms.TextBox();
+            this.chart1 = new System.Windows.Forms.DataVisualization.Charting.Chart();
             ((System.ComponentModel.ISupportInitialize)(this.numericComPort)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.numericReadChannel)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.chart)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.numPoints)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.numericWait)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.chart2)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.chart1)).BeginInit();
             this.SuspendLayout();
             // 
             // buttonConnect
@@ -64,127 +63,99 @@
             this.numericComPort.Name = "numericComPort";
             this.numericComPort.Size = new System.Drawing.Size(99, 20);
             this.numericComPort.TabIndex = 1;
+            this.numericComPort.Value = new decimal(new int[] {
+            6,
+            0,
+            0,
+            0});
             this.numericComPort.ValueChanged += new System.EventHandler(this.numericComPort_ValueChanged);
             // 
-            // buttonRead
-            // 
-            this.buttonRead.Location = new System.Drawing.Point(12, 60);
-            this.buttonRead.Name = "buttonRead";
-            this.buttonRead.Size = new System.Drawing.Size(75, 23);
-            this.buttonRead.TabIndex = 2;
-            this.buttonRead.Text = "Read";
-            this.buttonRead.UseVisualStyleBackColor = true;
-            this.buttonRead.Click += new System.EventHandler(this.buttonRead_Click);
-            // 
-            // numericReadChannel
-            // 
-            this.numericReadChannel.Location = new System.Drawing.Point(93, 63);
-            this.numericReadChannel.Name = "numericReadChannel";
-            this.numericReadChannel.Size = new System.Drawing.Size(99, 20);
-            this.numericReadChannel.TabIndex = 3;
-            // 
-            // chart
+            // chart2
             // 
             chartArea1.Name = "ChartArea1";
-            this.chart.ChartAreas.Add(chartArea1);
-            this.chart.Location = new System.Drawing.Point(12, 107);
-            this.chart.Name = "chart";
+            this.chart2.ChartAreas.Add(chartArea1);
+            this.chart2.Location = new System.Drawing.Point(12, 107);
+            this.chart2.Name = "chart2";
+            this.chart2.Palette = System.Windows.Forms.DataVisualization.Charting.ChartColorPalette.Bright;
             series1.ChartArea = "ChartArea1";
             series1.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.FastLine;
             series1.Name = "Series1";
-            this.chart.Series.Add(series1);
-            this.chart.Size = new System.Drawing.Size(696, 461);
-            this.chart.TabIndex = 4;
-            this.chart.Text = "chart1";
+            this.chart2.Series.Add(series1);
+            this.chart2.Size = new System.Drawing.Size(696, 461);
+            this.chart2.TabIndex = 4;
+            this.chart2.Text = "chart1";
             // 
-            // buttonPing
+            // port
             // 
-            this.buttonPing.Location = new System.Drawing.Point(308, 12);
-            this.buttonPing.Name = "buttonPing";
-            this.buttonPing.Size = new System.Drawing.Size(75, 23);
-            this.buttonPing.TabIndex = 5;
-            this.buttonPing.Text = "Ping";
-            this.buttonPing.UseVisualStyleBackColor = true;
-            this.buttonPing.Click += new System.EventHandler(this.buttonPing_Click);
+            this.port.BaudRate = 115200;
+            this.port.PortName = "COM6";
             // 
-            // button1
+            // timer1
             // 
-            this.button1.Location = new System.Drawing.Point(272, 63);
-            this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(75, 23);
-            this.button1.TabIndex = 6;
-            this.button1.Text = "Record";
-            this.button1.UseVisualStyleBackColor = true;
-            this.button1.Click += new System.EventHandler(this.button1_Click);
+            this.timer1.Enabled = true;
+            this.timer1.Interval = 1;
+            this.timer1.Tick += new System.EventHandler(this.Timer1_Tick);
             // 
-            // numPoints
+            // listBox1
             // 
-            this.numPoints.Location = new System.Drawing.Point(353, 66);
-            this.numPoints.Maximum = new decimal(new int[] {
-            10000,
-            0,
-            0,
-            0});
-            this.numPoints.Name = "numPoints";
-            this.numPoints.Size = new System.Drawing.Size(99, 20);
-            this.numPoints.TabIndex = 7;
+            this.listBox1.FormattingEnabled = true;
+            this.listBox1.Location = new System.Drawing.Point(631, 6);
+            this.listBox1.Name = "listBox1";
+            this.listBox1.Size = new System.Drawing.Size(77, 95);
+            this.listBox1.TabIndex = 5;
             // 
-            // numericWait
+            // btnTimer
             // 
-            this.numericWait.Location = new System.Drawing.Point(561, 53);
-            this.numericWait.Maximum = new decimal(new int[] {
-            10000,
-            0,
-            0,
-            0});
-            this.numericWait.Name = "numericWait";
-            this.numericWait.Size = new System.Drawing.Size(75, 20);
-            this.numericWait.TabIndex = 8;
+            this.btnTimer.Location = new System.Drawing.Point(93, 59);
+            this.btnTimer.Name = "btnTimer";
+            this.btnTimer.Size = new System.Drawing.Size(75, 23);
+            this.btnTimer.TabIndex = 6;
+            this.btnTimer.Text = "ON";
+            this.btnTimer.UseVisualStyleBackColor = true;
+            this.btnTimer.Click += new System.EventHandler(this.BtnTimer_Click);
             // 
-            // buttonSetWait
+            // txtSerialCant
             // 
-            this.buttonSetWait.Location = new System.Drawing.Point(561, 24);
-            this.buttonSetWait.Name = "buttonSetWait";
-            this.buttonSetWait.Size = new System.Drawing.Size(75, 23);
-            this.buttonSetWait.TabIndex = 9;
-            this.buttonSetWait.Text = "Set Wait";
-            this.buttonSetWait.UseVisualStyleBackColor = true;
-            this.buttonSetWait.Click += new System.EventHandler(this.buttonSetWait_Click);
+            this.txtSerialCant.Location = new System.Drawing.Point(575, 6);
+            this.txtSerialCant.Name = "txtSerialCant";
+            this.txtSerialCant.Size = new System.Drawing.Size(50, 20);
+            this.txtSerialCant.TabIndex = 7;
             // 
-            // buttonSave
+            // chart1
             // 
-            this.buttonSave.Location = new System.Drawing.Point(468, 63);
-            this.buttonSave.Name = "buttonSave";
-            this.buttonSave.Size = new System.Drawing.Size(75, 23);
-            this.buttonSave.TabIndex = 10;
-            this.buttonSave.Text = "Save";
-            this.buttonSave.UseVisualStyleBackColor = true;
-            this.buttonSave.Click += new System.EventHandler(this.buttonSave_Click);
+            chartArea2.Name = "ChartArea1";
+            this.chart1.ChartAreas.Add(chartArea2);
+            this.chart1.Location = new System.Drawing.Point(12, 107);
+            this.chart1.Name = "chart1";
+            this.chart1.Palette = System.Windows.Forms.DataVisualization.Charting.ChartColorPalette.Bright;
+            series2.ChartArea = "ChartArea1";
+            series2.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.FastLine;
+            series2.Name = "Series1";
+            this.chart1.Series.Add(series2);
+            this.chart1.Size = new System.Drawing.Size(696, 461);
+            this.chart1.TabIndex = 8;
+            this.chart1.Text = "chart1";
+            this.chart1.Visible = false;
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(720, 580);
-            this.Controls.Add(this.buttonSave);
-            this.Controls.Add(this.buttonSetWait);
-            this.Controls.Add(this.numericWait);
-            this.Controls.Add(this.numPoints);
-            this.Controls.Add(this.button1);
-            this.Controls.Add(this.buttonPing);
-            this.Controls.Add(this.chart);
-            this.Controls.Add(this.numericReadChannel);
-            this.Controls.Add(this.buttonRead);
+            this.Controls.Add(this.chart1);
+            this.Controls.Add(this.txtSerialCant);
+            this.Controls.Add(this.btnTimer);
+            this.Controls.Add(this.listBox1);
+            this.Controls.Add(this.chart2);
             this.Controls.Add(this.numericComPort);
             this.Controls.Add(this.buttonConnect);
             this.Name = "Form1";
             this.Text = "Form1";
             ((System.ComponentModel.ISupportInitialize)(this.numericComPort)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.numericReadChannel)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.chart)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.numPoints)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.numericWait)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.chart2)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.chart1)).EndInit();
             this.ResumeLayout(false);
+            this.PerformLayout();
 
         }
 
@@ -192,15 +163,13 @@
 
         private System.Windows.Forms.Button buttonConnect;
         private System.Windows.Forms.NumericUpDown numericComPort;
-        private System.Windows.Forms.Button buttonRead;
-        private System.Windows.Forms.NumericUpDown numericReadChannel;
-        private System.Windows.Forms.DataVisualization.Charting.Chart chart;
-        private System.Windows.Forms.Button buttonPing;
-        private System.Windows.Forms.Button button1;
-        private System.Windows.Forms.NumericUpDown numPoints;
-        private System.Windows.Forms.NumericUpDown numericWait;
-        private System.Windows.Forms.Button buttonSetWait;
-        private System.Windows.Forms.Button buttonSave;
+        private System.Windows.Forms.DataVisualization.Charting.Chart chart2;
+        private System.IO.Ports.SerialPort port;
+        private System.Windows.Forms.Timer timer1;
+        private System.Windows.Forms.ListBox listBox1;
+        private System.Windows.Forms.Button btnTimer;
+        private System.Windows.Forms.TextBox txtSerialCant;
+        private System.Windows.Forms.DataVisualization.Charting.Chart chart1;
     }
 }
 

@@ -10,21 +10,20 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Windows.Forms.DataVisualization.Charting;
 
 namespace Scopeduino
 {
     public partial class Form1 : Form
     {
-        SerialPort port = new SerialPort();
         public Form1()
         {
             InitializeComponent();
-            port.BaudRate = 57600;
-            port.ReadTimeout = 1000;
         }
 
         private void buttonConnect_Click(object sender, EventArgs e)
         {
+
             try
             {
                 if (port == null || !port.IsOpen)
@@ -39,7 +38,8 @@ namespace Scopeduino
                     buttonConnect.Text = "Connect";
                     numericComPort.Enabled = true;
                 }
-            } catch (Exception ex)
+            }
+            catch (Exception ex)
             {
                 MessageBox.Show(ex.Message);
             }
@@ -50,111 +50,92 @@ namespace Scopeduino
             if (port != null && !port.IsOpen) port.PortName = "COM" + numericComPort.Value;
         }
 
-        private void buttonRead_Click(object sender, EventArgs e)
+        private string message;
+        private void Timer1_Tick(object sender, EventArgs e)
         {
-            try
+            if (!port.IsOpen)
             {
-                string cmd = "read " + numericReadChannel.Value.ToString();
-                port.WriteLine(cmd);
-                //Thread.Sleep(10);
-                string r = port.ReadLine();
-                double p = double.Parse(r);
-                chart.Series[0].Points.AddY(p);
+                return;
             }
-            catch (Exception ex)
+
+            var allLines = port.ReadExisting();
+
+            if (string.IsNullOrEmpty(allLines))
             {
-                MessageBox.Show(ex.Message);
+                return;
             }
-        }
 
-        private void buttonPing_Click(object sender, EventArgs e)
-        {
-            try
+            var chars = allLines.AsEnumerable().Where(c => c != '\r');
+
+            foreach (var c in chars)
             {
-                port.WriteLine("ping");
-                string r = port.ReadLine();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message);
-            }
-        }
-
-        private void buttonSetWait_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                port.WriteLine("wait " + numericWait.Value.ToString());
-                port.WriteLine("wait?");
-                string r = port.ReadLine();
-                int w = int.Parse(r);
-                if (w != (int)numericWait.Value) throw new Exception("Send " + numericWait.Value.ToString() + " but wait? got " + w);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message);
-            }
-        }
-
-        int[] vals = null;
-        ulong[] times = null;
-        private void button1_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                int nump = (int)numPoints.Value;
-                vals = new int[nump];
-                times = new ulong[nump];
-
-                port.ReadTimeout = 30000;
-
-                string cmd = "rec " + numericReadChannel.Value.ToString() + " " + nump.ToString();
-                port.WriteLine(cmd);
-
-                chart.Series[0].Points.Clear();
-                for (int i = 0; i < nump; i++)
+                if ( c == '\n')
                 {
-                    string r = port.ReadLine();
-                    string[] parts = r.Split(',');
-                    int val = int.Parse(parts[0]);
-                    ulong time = ulong.Parse(parts[1]);
-
-                    vals[i] = val;
-                    times[i] = time;
-
-                    chart.Series[0].Points.AddXY(time, val);
+                    ProcessInput(message);
+                    message = string.Empty;
+                }
+                else
+                {
+                    message += c;
                 }
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message);
-            }
         }
 
-        private void buttonSave_Click(object sender, EventArgs e)
+        private IList<double> values = new List<double>();
+        private void ProcessInput(string line)
         {
-            if (times == null) return;
-            try
+            switch (line)
             {
-                SaveFileDialog sf = new SaveFileDialog();
-                DialogResult sfr = sf.ShowDialog();
+                case "FIN":
 
-                if (sfr == DialogResult.OK)
-                {
-                    using (StreamWriter w = new StreamWriter(sf.FileName))
+                    Draw(values);
+                    txtSerialCant.Text = values.Count.ToString();
+                    values.Clear();
+                    listBox1.Items.Clear();
+                    
+                    break;
+                default:
+                    double val;
+                    if (double.TryParse(line, out val))
                     {
-                        for (int i = 0; i < times.Length; i++)
-                        {
-                            w.WriteLine(vals[i] + "," + times[i]);
-                        }
-                        w.Close();
+                        listBox1.Items.Add(val);
+                        values.Add(val);
                     }
-                }
+                    break;
             }
-            catch (Exception ex)
+        }
+
+        private void BtnTimer_Click(object sender, EventArgs e)
+        {
+            timer1.Enabled = !timer1.Enabled;
+            ((Button)sender).Text = timer1.Enabled ? "ON" : "OFF";
+        }
+
+        private void Draw(IList<double> values)
+        {
+            Chart chartInvisible;
+            Chart chartVisible;
+            if (chart1.Visible)
             {
-                MessageBox.Show(ex.Message);
+                chartInvisible = chart2;
+                chartVisible = chart1;
             }
+            else
+            {
+                chartInvisible = chart1;
+                chartVisible = chart2;
+            }
+
+            chartInvisible.Series[0].Points.Clear();
+
+            var i = 0;
+            foreach (var v in values)
+            {
+                i++;
+                chartInvisible.Series[0].Points.AddXY(i, v);
+            }
+            chartInvisible.Visible = true;
+            chartVisible.Visible = false;
         }
     }
 }
