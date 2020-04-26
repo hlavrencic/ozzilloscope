@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Windows.Forms;
 
@@ -12,6 +13,7 @@ namespace Scopeduino
         private readonly ValueParser valueParser;
         private readonly OsciSwap osciSwap;
         private SerialParser serialParser;
+        private Stopwatch sw = new Stopwatch();
 
         public Form1()
         {
@@ -55,6 +57,7 @@ namespace Scopeduino
                     configBox.Enabled = false;
                     hScrollBar1.Enabled = false;
                     timer1.Enabled = true;
+                    sw.Start();
                 }
                 else
                 {
@@ -79,6 +82,7 @@ namespace Scopeduino
             buttonConnect.BackColor = System.Drawing.Color.Green;
             configBox.Enabled = true;
             hScrollBar1.Enabled = true;
+            sw.Stop();
         }
 
         private void HScrollBar1_ValueChanged(object sender, EventArgs e)
@@ -117,9 +121,51 @@ namespace Scopeduino
 
             numMaxValue.Value = Convert.ToDecimal(max);
 
-
+            
             osciSwap.Draw(lista, max);
+
             hScrollBar1.Maximum = valueRepo.BddCount - 1;
+
+            lblFps.Text = "FPS: " + Math.Round(1000 / sw.Elapsed.TotalMilliseconds);   
+            sw.Restart();
+        }
+
+        private void NumericUpDown1_ValueChanged(object sender, EventArgs e)
+        {
+            if (!chkSampleAuto.Checked)
+            {
+                return;
+            }
+
+            const int BAUD = 230400;
+
+            var num = (NumericUpDown)sender;
+            if(num.Value <= 0)
+            {
+                return;
+            }
+
+            numSamples.Value = num.Value / (BAUD / 200);
+        }
+
+        private void Label5_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void NumSamples_ValueChanged(object sender, EventArgs e)
+        {
+            
+        }
+
+        private void Label4_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void ChkSampleAuto_CheckedChanged(object sender, EventArgs e)
+        {
+
         }
     }
 }
