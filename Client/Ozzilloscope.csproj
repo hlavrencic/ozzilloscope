@@ -7,8 +7,8 @@
     <ProjectGuid>{3C96A8A3-33FD-408B-BE17-6427EF2FB56B}</ProjectGuid>
     <OutputType>WinExe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Scopeduino</RootNamespace>
-    <AssemblyName>Scopeduino</AssemblyName>
+    <RootNamespace>Ozzilloscope</RootNamespace>
+    <AssemblyName>Ozzilloscope</AssemblyName>
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
