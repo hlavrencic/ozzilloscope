@@ -1,65 +1,65 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.IO;
-using System.IO.Ports;
 using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace Scopeduino
 {
     public partial class Form1 : Form
     {
-        SerialPort port = new SerialPort();
+
+        private readonly ValuesRepo valueRepo;
+        private readonly ValueParser valueParser;
+        private readonly OsciSwap osciSwap;
+        private SerialParser serialParser;
+
         public Form1()
         {
+            //hScrollBar1
             InitializeComponent();
-            port.BaudRate = 57600;
-            port.ReadTimeout = 1000;
+            valueRepo = new ValuesRepo();
+            osciSwap = new OsciSwap(chart1, chart2);
+            valueParser = new ValueParser();
+        }
+
+        private void Timer1_Tick(object sender, EventArgs e)
+        {
+            try
+            {
+                ReadSerial();
+            }
+            catch (Exception ex)
+            {
+                
+                Disconnect();
+                MessageBox.Show(ex.Message);
+            }
+            
         }
 
         private void buttonConnect_Click(object sender, EventArgs e)
         {
+            btnConnect();
+        }
+
+        private void btnConnect()
+        {
             try
             {
-                if (port == null || !port.IsOpen)
+                if (buttonConnect.Text == "Connect")
                 {
-                    port.Open();
+                    valueRepo.SetGroupCount((int)numSamples.Value);
+                    serialParser = new SerialParser((byte)numericComPort.Value, (int)numericUpDown1.Value, valueParser);
                     buttonConnect.Text = "Disconnect";
-                    numericComPort.Enabled = false;
+                    buttonConnect.BackColor = System.Drawing.Color.Red;
+                    configBox.Enabled = false;
+                    hScrollBar1.Enabled = false;
+                    timer1.Enabled = true;
                 }
                 else
                 {
-                    port.Close();
-                    buttonConnect.Text = "Connect";
-                    numericComPort.Enabled = true;
+                    Disconnect();
                 }
-            } catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message);
-            }
-        }
-
-        private void numericComPort_ValueChanged(object sender, EventArgs e)
-        {
-            if (port != null && !port.IsOpen) port.PortName = "COM" + numericComPort.Value;
-        }
-
-        private void buttonRead_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                string cmd = "read " + numericReadChannel.Value.ToString();
-                port.WriteLine(cmd);
-                //Thread.Sleep(10);
-                string r = port.ReadLine();
-                double p = double.Parse(r);
-                chart.Series[0].Points.AddY(p);
             }
             catch (Exception ex)
             {
@@ -67,94 +67,59 @@ namespace Scopeduino
             }
         }
 
-        private void buttonPing_Click(object sender, EventArgs e)
+        private void Disconnect()
         {
-            try
+            timer1.Enabled = false;
+            if (serialParser != null)
             {
-                port.WriteLine("ping");
-                string r = port.ReadLine();
+                serialParser.Dispose();
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message);
-            }
+
+            buttonConnect.Text = "Connect";
+            buttonConnect.BackColor = System.Drawing.Color.Green;
+            configBox.Enabled = true;
+            hScrollBar1.Enabled = true;
         }
 
-        private void buttonSetWait_Click(object sender, EventArgs e)
+        private void HScrollBar1_ValueChanged(object sender, EventArgs e)
         {
-            try
-            {
-                port.WriteLine("wait " + numericWait.Value.ToString());
-                port.WriteLine("wait?");
-                string r = port.ReadLine();
-                int w = int.Parse(r);
-                if (w != (int)numericWait.Value) throw new Exception("Send " + numericWait.Value.ToString() + " but wait? got " + w);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message);
-            }
+            var pos = hScrollBar1.Value;
+            var lista = valueRepo.Get(pos);
+            osciSwap.Draw(lista, (int)numMaxValue.Value);
         }
 
-        int[] vals = null;
-        ulong[] times = null;
-        private void button1_Click(object sender, EventArgs e)
+        private void ReadSerial()
         {
-            try
+            double? valor;
+            IList<double> lista = null;
+
+            do
             {
-                int nump = (int)numPoints.Value;
-                vals = new int[nump];
-                times = new ulong[nump];
+                valor = valueParser.Get();
 
-                port.ReadTimeout = 30000;
-
-                string cmd = "rec " + numericReadChannel.Value.ToString() + " " + nump.ToString();
-                port.WriteLine(cmd);
-
-                chart.Series[0].Points.Clear();
-                for (int i = 0; i < nump; i++)
+                if(valor == null)
                 {
-                    string r = port.ReadLine();
-                    string[] parts = r.Split(',');
-                    int val = int.Parse(parts[0]);
-                    ulong time = ulong.Parse(parts[1]);
-
-                    vals[i] = val;
-                    times[i] = time;
-
-                    chart.Series[0].Points.AddXY(time, val);
+                    break;
                 }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message);
-            }
-        }
 
-        private void buttonSave_Click(object sender, EventArgs e)
-        {
-            if (times == null) return;
-            try
-            {
-                SaveFileDialog sf = new SaveFileDialog();
-                DialogResult sfr = sf.ShowDialog();
+                lista = valueRepo.Add(valor.Value);
+            } while (valor != null && lista == null);
 
-                if (sfr == DialogResult.OK)
-                {
-                    using (StreamWriter w = new StreamWriter(sf.FileName))
-                    {
-                        for (int i = 0; i < times.Length; i++)
-                        {
-                            w.WriteLine(vals[i] + "," + times[i]);
-                        }
-                        w.Close();
-                    }
-                }
-            }
-            catch (Exception ex)
+            if(lista == null)
             {
-                MessageBox.Show(ex.Message);
+                return;
             }
+
+            var max = Convert.ToDouble( numMaxValue.Value);
+
+            var curMax = lista.Max();
+            max = max < curMax ? curMax : max;
+
+            numMaxValue.Value = Convert.ToDecimal(max);
+
+
+            osciSwap.Draw(lista, max);
+            hScrollBar1.Maximum = valueRepo.BddCount - 1;
         }
     }
 }

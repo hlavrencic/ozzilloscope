@@ -1,3 +1,4 @@
 Client/obj/
-.vs/
-bin/
+Client/.vs/
+Client/bin/
+/.vs
