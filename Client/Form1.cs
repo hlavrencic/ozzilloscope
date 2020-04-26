@@ -1,42 +1,64 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.IO;
-using System.IO.Ports;
 using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Windows.Forms.DataVisualization.Charting;
 
 namespace Scopeduino
 {
     public partial class Form1 : Form
     {
+
+        private readonly ValuesRepo valueRepo;
+        private readonly ValueParser valueParser;
+        private readonly OsciSwap osciSwap;
+        private SerialParser serialParser;
+
         public Form1()
         {
+            //hScrollBar1
             InitializeComponent();
+            valueRepo = new ValuesRepo();
+            osciSwap = new OsciSwap(chart1, chart2);
+            valueParser = new ValueParser();
+        }
+
+        private void Timer1_Tick(object sender, EventArgs e)
+        {
+            try
+            {
+                ReadSerial();
+            }
+            catch (Exception ex)
+            {
+                
+                Disconnect();
+                MessageBox.Show(ex.Message);
+            }
+            
         }
 
         private void buttonConnect_Click(object sender, EventArgs e)
         {
+            btnConnect();
+        }
 
+        private void btnConnect()
+        {
             try
             {
-                if (port == null || !port.IsOpen)
+                if (buttonConnect.Text == "Connect")
                 {
-                    port.Open();
+                    valueRepo.SetGroupCount((int)numSamples.Value);
+                    serialParser = new SerialParser((byte)numericComPort.Value, (int)numericUpDown1.Value, valueParser);
                     buttonConnect.Text = "Disconnect";
-                    numericComPort.Enabled = false;
+                    buttonConnect.BackColor = System.Drawing.Color.Red;
+                    configBox.Enabled = false;
+                    hScrollBar1.Enabled = false;
+                    timer1.Enabled = true;
                 }
                 else
                 {
-                    port.Close();
-                    buttonConnect.Text = "Connect";
-                    numericComPort.Enabled = true;
+                    Disconnect();
                 }
             }
             catch (Exception ex)
@@ -45,97 +67,59 @@ namespace Scopeduino
             }
         }
 
-        private void numericComPort_ValueChanged(object sender, EventArgs e)
+        private void Disconnect()
         {
-            if (port != null && !port.IsOpen) port.PortName = "COM" + numericComPort.Value;
+            timer1.Enabled = false;
+            if (serialParser != null)
+            {
+                serialParser.Dispose();
+            }
+
+            buttonConnect.Text = "Connect";
+            buttonConnect.BackColor = System.Drawing.Color.Green;
+            configBox.Enabled = true;
+            hScrollBar1.Enabled = true;
         }
 
-        private string message;
-        private void Timer1_Tick(object sender, EventArgs e)
+        private void HScrollBar1_ValueChanged(object sender, EventArgs e)
         {
-            if (!port.IsOpen)
+            var pos = hScrollBar1.Value;
+            var lista = valueRepo.Get(pos);
+            osciSwap.Draw(lista, (int)numMaxValue.Value);
+        }
+
+        private void ReadSerial()
+        {
+            double? valor;
+            IList<double> lista = null;
+
+            do
+            {
+                valor = valueParser.Get();
+
+                if(valor == null)
+                {
+                    break;
+                }
+
+                lista = valueRepo.Add(valor.Value);
+            } while (valor != null && lista == null);
+
+            if(lista == null)
             {
                 return;
             }
 
-            var allLines = port.ReadExisting();
+            var max = Convert.ToDouble( numMaxValue.Value);
 
-            if (string.IsNullOrEmpty(allLines))
-            {
-                return;
-            }
+            var curMax = lista.Max();
+            max = max < curMax ? curMax : max;
 
-            var chars = allLines.AsEnumerable().Where(c => c != '\r');
+            numMaxValue.Value = Convert.ToDecimal(max);
 
-            foreach (var c in chars)
-            {
-                if ( c == '\n')
-                {
-                    ProcessInput(message);
-                    message = string.Empty;
-                }
-                else
-                {
-                    message += c;
-                }
-            }
-        }
 
-        private IList<double> values = new List<double>();
-        private void ProcessInput(string line)
-        {
-            switch (line)
-            {
-                case "FIN":
-
-                    Draw(values);
-                    txtSerialCant.Text = values.Count.ToString();
-                    values.Clear();
-                    listBox1.Items.Clear();
-                    
-                    break;
-                default:
-                    double val;
-                    if (double.TryParse(line, out val))
-                    {
-                        listBox1.Items.Add(val);
-                        values.Add(val);
-                    }
-                    break;
-            }
-        }
-
-        private void BtnTimer_Click(object sender, EventArgs e)
-        {
-            timer1.Enabled = !timer1.Enabled;
-            ((Button)sender).Text = timer1.Enabled ? "ON" : "OFF";
-        }
-
-        private void Draw(IList<double> values)
-        {
-            Chart chartInvisible;
-            Chart chartVisible;
-            if (chart1.Visible)
-            {
-                chartInvisible = chart2;
-                chartVisible = chart1;
-            }
-            else
-            {
-                chartInvisible = chart1;
-                chartVisible = chart2;
-            }
-
-            chartInvisible.Series[0].Points.Clear();
-
-            var i = 0;
-            foreach (var v in values)
-            {
-                i++;
-                chartInvisible.Series[0].Points.AddXY(i, v);
-            }
-            chartInvisible.Visible = true;
-            chartVisible.Visible = false;
+            osciSwap.Draw(lista, max);
+            hScrollBar1.Maximum = valueRepo.BddCount - 1;
         }
     }
 }
